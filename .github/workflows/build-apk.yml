@@ -39,35 +39,23 @@ jobs:
         env:
           FOOTBALL_API_TOKEN: ${{ secrets.FOOTBALL_API_TOKEN }}
 
-      - name: Install Buildozer system dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y \
-            git zip unzip openjdk-17-jdk \
-            python3-pip autoconf libtool pkg-config \
-            zlib1g-dev libncurses-dev \
-            cmake libffi-dev libssl-dev \
-            build-essential ccache
-
-      - name: Cache Buildozer global directory
+      - name: Cache Buildozer Docker layers
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.buildozer
-            ~/.android
-          key: ${{ runner.os }}-buildozer-v6-${{ hashFiles('buildozer.spec') }}
+          path: /tmp/buildozer-cache
+          key: ${{ runner.os }}-buildozer-docker-v2-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            ${{ runner.os }}-buildozer-v6-
+            ${{ runner.os }}-buildozer-docker-v2-
 
-      - name: Install Buildozer and Cython
+      - name: Build APK using kivy/buildozer Docker image
         run: |
-          pip install "cython==0.29.33"
-          pip install buildozer
-
-      - name: Build APK
-        run: buildozer -v android debug 2>&1
-        env:
-          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+          # The kivy/buildozer image has a stable, pinned toolchain (Python 3.11 for Android)
+          # that avoids the 'cgi' removal in Python 3.13+
+          docker run --rm \
+            -v "$(pwd)":/home/user/hostcwd \
+            -v /tmp/buildozer-cache:/home/user/.buildozer \
+            kivy/buildozer:latest \
+            android debug 2>&1
 
       - name: Verify APK was created
         run: |
@@ -101,7 +89,7 @@ jobs:
             - XGBoost predictions pre-generated for 45-day window
             - Dark UI with per-match confidence bars and odds hints
             - Home / History / About screens
-            - About: Sserunjogi Sharif · 0787816686
+            - Developer: Sserunjogi Sharif · 0787816686
 
             ### How to use
             Open the app → enter any date → tap **GET PREDICTIONS**
