@@ -1,122 +1,117 @@
 name: Build APK
 
-    on:
-    push:
-      branches: [ main ]
-    workflow_dispatch:
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
-    jobs:
-    build:
-      runs-on: ubuntu-22.04
-      timeout-minutes: 120
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
 
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        - name: Set up Python 3.9
-          uses: actions/setup-python@v5
-          with:
-            python-version: "3.9"
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
 
-        - name: Set up Java 17 (required by Android SDK/build-tools)
-          uses: actions/setup-java@v4
-          with:
-            java-version: "17"
-            distribution: "temurin"
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
 
-        - name: Cache pip packages
-          uses: actions/cache@v4
-          with:
-            path: ~/.cache/pip
-            key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
 
-        - name: Install server-side ML dependencies
-          run: pip install numpy "xgboost>=1.7.0,<2.0.0" scikit-learn requests beautifulsoup4 pandas
+      - name: Install server-side ML dependencies
+        run: pip install numpy "xgboost>=1.7.0,<2.0.0" scikit-learn requests beautifulsoup4 pandas
 
-        - name: Run data pipeline and generate predictions.json
-          run: |
-            python scraper.py
-            python clean.py
-            python train.py
-            python predict.py --generate
-            echo "--- predictions.json head ---"
-            head -20 predictions.json
-          env:
-            FOOTBALL_API_TOKEN: ${{ secrets.FOOTBALL_API_TOKEN }}
+      - name: Run data pipeline and generate predictions.json
+        run: |
+          python scraper.py
+          python clean.py
+          python train.py
+          python predict.py --generate
+          echo '--- predictions.json head ---'
+          head -20 predictions.json
+        env:
+          FOOTBALL_API_TOKEN: ${{ secrets.FOOTBALL_API_TOKEN }}
 
-        - name: Install system build dependencies for buildozer
-          run: |
-            sudo apt-get update -qq
-            sudo apt-get install -y \
-              git zip unzip \
-              build-essential ccache \
-              autoconf automake libtool \
-              pkg-config zlib1g-dev \
-              libncurses5-dev libncursesw5-dev libtinfo5 \
-              cmake libffi-dev libssl-dev \
-              libltdl-dev lld
+      - name: Install system build dependencies for buildozer
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            git zip unzip \
+            build-essential ccache \
+            autoconf automake libtool \
+            pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev libtinfo5 \
+            cmake libffi-dev libssl-dev libltdl-dev
 
-        - name: Cache buildozer global directory
-          uses: actions/cache@v4
-          with:
-            path: ~/.buildozer
-            key: ${{ runner.os }}-buildozer-native-py39-v3-${{ hashFiles('buildozer.spec') }}
-            restore-keys: |
-              ${{ runner.os }}-buildozer-native-py39-v3-
+      - name: Cache buildozer global directory
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: ${{ runner.os }}-buildozer-native-py39-v3-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-buildozer-native-py39-v3-
 
-        - name: Install Cython 0.29.37 and buildozer 1.5.0
-          run: |
-            pip install --upgrade pip
-            pip install "cython==0.29.37" "buildozer==1.5.0"
+      - name: Install Cython 0.29.37 and buildozer 1.5.0
+        run: |
+          pip install --upgrade pip
+          pip install "cython==0.29.37" "buildozer==1.5.0"
 
-        - name: Build APK (native buildozer — Python 3.9 host + target)
-          run: |
-            buildozer -v android debug 2>&1
-          env:
-            ANDROID_SDK_ROOT: ${{ github.workspace }}/.buildozer/android/platform/android-sdk
-            ANDROID_NDK_HOME: ${{ github.workspace }}/.buildozer/android/platform/android-ndk-r25b
+      - name: Build APK
+        run: buildozer -v android debug 2>&1
 
-        - name: Verify APK was created
-          run: |
-            ls -lh bin/ || (echo "ERROR: bin/ directory missing" && exit 1)
-            APK=$(ls bin/*.apk 2>/dev/null | head -1)
-            if [ -z "$APK" ]; then echo "ERROR: No APK in bin/" && exit 1; fi
-            cp "$APK" "bin/BetPawa-Predictor-v1.0.${{ github.run_number }}.apk"
-            echo "APK_PATH=bin/BetPawa-Predictor-v1.0.${{ github.run_number }}.apk" >> $GITHUB_ENV
+      - name: Verify APK was created
+        run: |
+          ls -lh bin/ || (echo 'ERROR: bin/ missing' && exit 1)
+          APK=$(ls bin/*.apk 2>/dev/null | head -1)
+          [ -z "$APK" ] && echo 'ERROR: No APK' && exit 1
+          cp "$APK" "bin/BetPawa-Predictor-v1.0.${{ github.run_number }}.apk"
+          echo "APK_PATH=bin/BetPawa-Predictor-v1.0.${{ github.run_number }}.apk" >> $GITHUB_ENV
 
-        - name: Upload APK artifact (90-day retention)
-          uses: actions/upload-artifact@v4
-          with:
-            name: BetPawa-Predictor-APK
-            path: bin/BetPawa-Predictor-*.apk
-            retention-days: 90
+      - name: Upload APK artifact (90-day retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: BetPawa-Predictor-APK
+          path: bin/BetPawa-Predictor-*.apk
+          retention-days: 90
 
-        - name: Create GitHub Release
-          uses: softprops/action-gh-release@v2
-          with:
-            tag_name: v1.0.${{ github.run_number }}
-            name: "BetPawa Predictor v1.0.${{ github.run_number }}"
-            body: |
-              ## BetPawa Predictor APK — ready to install
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "BetPawa Predictor v1.0.${{ github.run_number }}"
+          body: |
+            ## BetPawa Predictor APK
 
-              ### Install on Android
-              1. Download **BetPawa-Predictor-v1.0.${{ github.run_number }}.apk** below
-              2. On your phone: **Settings → Security → Unknown sources → Enable**
-              3. Open the `.apk` → tap **Install**
+            ### Install on Android
+            1. Download the .apk file below
+            2. On your phone: Settings → Security → Unknown sources → Enable
+            3. Open the .apk → tap Install
 
-              ### What's inside
-              - XGBoost predictions pre-generated for a 45-day window
-              - Dark UI with per-match confidence bars and odds hints
-              - Home / History / About screens
-              - Developer: Sserunjogi Sharif · 0787816686
+            ### Features
+            - XGBoost predictions pre-generated for a 45-day window
+            - Dark UI with per-match confidence bars and odds hints
+            - Home / History / About screens
 
-              ### How to use
-              Open the app → enter any date → tap **GET PREDICTIONS**
+            ### Developer
+            Sserunjogi Sharif · 0787816686
 
-            files: bin/BetPawa-Predictor-*.apk
-            draft: false
-            prerelease: false
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    
+            ### How to use
+            Open the app → enter any date → tap GET PREDICTIONS
+          files: bin/BetPawa-Predictor-*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
