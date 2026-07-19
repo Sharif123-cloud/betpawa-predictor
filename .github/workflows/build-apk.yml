@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -46,7 +49,6 @@ jobs:
           FOOTBALL_API_TOKEN: ${{ secrets.FOOTBALL_API_TOKEN }}
 
       # apt-get must run BEFORE we override /usr/bin/python3
-      # because system apt tools (cnf-update-db) need the original python3
       - name: Install system build dependencies for buildozer
         run: |
           sudo apt-get update -qq
@@ -58,16 +60,15 @@ jobs:
             libncurses5-dev libncursesw5-dev libtinfo5 \
             cmake libffi-dev libssl-dev libltdl-dev
 
-      # Override /usr/bin/python3 AFTER apt-get so system tools aren't broken.
-      # p4a calls 'python3' internally to detect hostpython3 version.
-      # Without this, it finds the runner's system Python 3.14.x instead of our 3.9.25.
+      # Override /usr/bin/python3 AFTER apt-get so system tools still work.
+      # p4a internally calls 'python3' to detect hostpython3 version —
+      # without this it finds the runner's system Python 3.14.x, not our 3.9.25.
       - name: Override system python3 to point to 3.9.25
         run: |
           PY=$(which python3)
-          echo "Symlinking /usr/bin/python3 -> $PY ($(python3 --version))"
           sudo ln -sf "$PY" /usr/bin/python3
           sudo ln -sf "$PY" /usr/bin/python
-          echo "Verification: $(python3 --version) | $(/usr/bin/python3 --version)"
+          echo "python3 is now: $(/usr/bin/python3 --version)"
 
       - name: Cache buildozer global directory
         uses: actions/cache@v4
@@ -106,23 +107,21 @@ jobs:
           tag_name: v1.0.${{ github.run_number }}
           name: "BetPawa Predictor v1.0.${{ github.run_number }}"
           body: |
-            ## BetPawa Predictor APK
+            ## BetPawa Predictor APK — ready to install
 
             ### Install on Android
-            1. Download the .apk file listed below
-            2. On your phone: Settings → Security → Unknown sources → Enable
-            3. Open the .apk → tap Install
+            1. Download **BetPawa-Predictor-v1.0.${{ github.run_number }}.apk** below
+            2. On your phone: **Settings → Security → Unknown sources → Enable**
+            3. Open the `.apk` → tap **Install**
 
             ### Features
             - XGBoost predictions pre-generated for a 45-day window
-            - Dark UI with per-match confidence bars and odds hints
+            - Dark UI with confidence bars and odds hints
             - Home / History / About screens
+            - Enter any date → tap GET PREDICTIONS
 
             ### Developer
             Sserunjogi Sharif · 0787816686
-
-            ### How to use
-            Open the app → enter any date → tap GET PREDICTIONS
           files: bin/BetPawa-Predictor-*.apk
           draft: false
           prerelease: false
