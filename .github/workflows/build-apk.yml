@@ -25,7 +25,7 @@ jobs:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
 
-      - name: Install Python dependencies (server-side only)
+      - name: Install server-side ML dependencies
         run: pip install numpy xgboost scikit-learn requests beautifulsoup4 pandas
 
       - name: Run data pipeline and generate predictions.json
@@ -34,8 +34,8 @@ jobs:
           python clean.py
           python train.py
           python predict.py --generate
-          echo "=== predictions.json preview ==="
-          head -30 predictions.json
+          echo "--- predictions.json head ---"
+          head -20 predictions.json
         env:
           FOOTBALL_API_TOKEN: ${{ secrets.FOOTBALL_API_TOKEN }}
 
@@ -53,29 +53,27 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: ${{ runner.os }}-buildozer-v2-${{ hashFiles('buildozer.spec') }}
+          key: ${{ runner.os }}-buildozer-v3-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            ${{ runner.os }}-buildozer-v2-
+            ${{ runner.os }}-buildozer-v3-
 
-      - name: Install Buildozer and Cython
-        run: pip install buildozer cython==0.29.36
+      - name: Install Buildozer (cython 0.29.33 is required for kivy 2.1.0)
+        run: pip install buildozer "cython==0.29.33"
 
       - name: Build APK
         run: buildozer android debug 2>&1
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
 
-      - name: Rename APK
+      - name: Verify APK was created
         run: |
+          ls -lh bin/
           APK=$(ls bin/*.apk 2>/dev/null | head -1)
-          if [ -n "$APK" ]; then
-            cp "$APK" "bin/BetPawa-Predictor-v1.0.${{ github.run_number }}.apk"
-            echo "APK built: $APK"
-          else
-            echo "ERROR: No APK found in bin/" && exit 1
-          fi
+          if [ -z "$APK" ]; then echo "ERROR: No APK in bin/" && exit 1; fi
+          cp "$APK" "bin/BetPawa-Predictor-v1.0.${{ github.run_number }}.apk"
+          echo "APK_PATH=bin/BetPawa-Predictor-v1.0.${{ github.run_number }}.apk" >> $GITHUB_ENV
 
-      - name: Upload APK as artifact
+      - name: Upload APK artifact (90-day retention)
         uses: actions/upload-artifact@v4
         with:
           name: BetPawa-Predictor-APK
@@ -88,21 +86,21 @@ jobs:
           tag_name: v1.0.${{ github.run_number }}
           name: "BetPawa Predictor v1.0.${{ github.run_number }}"
           body: |
-            ## ⚽ BetPawa Predictor APK
+            ## ⚽ BetPawa Predictor APK — ready to install
 
             ### Install on Android
             1. Download **BetPawa-Predictor-v1.0.${{ github.run_number }}.apk** below
-            2. Phone: **Settings → Security → Unknown sources → Enable**
-            3. Open the `.apk` file → tap **Install**
+            2. On your phone: **Settings → Security → Unknown sources → Enable**
+            3. Open the `.apk` → tap **Install**
 
             ### What's inside
-            - XGBoost model trained on latest scraped match data
-            - Predictions pre-generated for 45-day window (past 7 + next 38 days)
-            - Dark UI with confidence bars and odds hints
-            - About screen: Sserunjogi Sharif · 0787816686
+            - XGBoost predictions pre-generated for 45-day window
+            - Dark UI with per-match confidence bars and odds hints
+            - Home / History / About screens
+            - About: Sserunjogi Sharif · 0787816686
 
-            ### Usage
-            Open app → enter any date in range → tap **GET PREDICTIONS**
+            ### How to use
+            Open the app → enter any date → tap **GET PREDICTIONS**
 
           files: bin/BetPawa-Predictor-*.apk
           draft: false
