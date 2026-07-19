@@ -1,14 +1,14 @@
 [app]
 title = BetPawa Predictor
 package.name = betpawapredictor
-package.domain = org.sserunjogivdev
+package.domain = org.sserunjogidev
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,json
 source.include_patterns = predictions.json,model_meta.json
 version = 1.0.0
 
-# kivy 2.1.0 has verified python-for-android recipes; 2.2.0 has config.pxi issues
-requirements = python3,kivy==2.1.0
+# kivy 2.1.0 is the stable release with verified python-for-android recipes
+requirements = python3,kivy==2.1.0,pillow
 
 orientation = portrait
 fullscreen = 0
@@ -25,4 +25,4 @@ android.permissions = INTERNET
 
 [buildozer]
 log_level = 2
-warn_on_root = 1
+warn_on_root = 0

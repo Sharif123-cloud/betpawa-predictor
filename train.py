@@ -1,6 +1,6 @@
 """
 train.py - XGBoost Model Training
-Reads data.db, trains classifier, saves model.pkl + label_encoder.pkl
+Reads data.db, trains classifier, saves model.pkl + model_meta.json
 """
 
 import sqlite3
@@ -72,7 +72,6 @@ def train(db_path=DB_FILE):
             learning_rate=0.05,
             subsample=0.8,
             colsample_bytree=0.8,
-            use_label_encoder=False,
             eval_metric="mlogloss",
             random_state=42,
             n_jobs=-1,

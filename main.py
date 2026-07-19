@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 os.environ.setdefault("KIVY_NO_ENV_CONFIG", "1")
 
 import kivy
-kivy.require("2.2.0")
+kivy.require("2.1.0")
 
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
@@ -87,7 +87,7 @@ class HomeScreen(Screen):
         hdr = BoxLayout(size_hint_y=None, height=dp(70), padding=[dp(16), dp(10)])
         bg(hdr, C_CARD)
         col = BoxLayout(orientation="vertical", spacing=dp(2))
-        col.add_widget(Label(text="⚽  BetPawa Predictor", font_size=sp(20),
+        col.add_widget(Label(text="BetPawa Predictor", font_size=sp(20),
                              bold=True, color=C_TEXT, halign="left",
                              size_hint_y=None, height=dp(28)))
         col.add_widget(Label(text="AI-powered match outcome predictions",
@@ -134,7 +134,7 @@ class HomeScreen(Screen):
         body.add_widget(qs)
 
         # Predict button
-        pb = Button(text="🔮  GET PREDICTIONS", size_hint_y=None, height=dp(54),
+        pb = Button(text="GET PREDICTIONS", size_hint_y=None, height=dp(54),
                     font_size=sp(16), bold=True,
                     background_color=C_PRIMARY, color=WHITE)
         pb.bind(on_press=self._predict)
@@ -151,9 +151,9 @@ class HomeScreen(Screen):
         ic.add_widget(Label(text="HOW IT WORKS", font_size=sp(10),
                             color=C_MUTED, bold=True, halign="left",
                             size_hint_y=None, height=dp(16)))
-        for tip in ["📊  XGBoost model trained on 500+ real matches",
-                    "🔄  Predictions rebuilt on every release",
-                    "⚠️  For informational purposes only"]:
+        for tip in ["XGBoost model trained on 500+ real matches",
+                    "Predictions rebuilt on every release",
+                    "For informational purposes only"]:
             ic.add_widget(Label(text=tip, font_size=sp(12), color=C_TEXT,
                                 halign="left", size_hint_y=None, height=dp(20),
                                 text_size=(Window.width - dp(56), None)))
@@ -175,7 +175,7 @@ class HomeScreen(Screen):
         if preds is None:
             available = sorted(data.get("predictions", {}).keys())
             if available:
-                self.status.text = f"No data for {date}. Try: {available[0]} – {available[-1]}"
+                self.status.text = f"No data for {date}. Try: {available[0]} - {available[-1]}"
             else:
                 self.status.text = "No predictions available"
             self.status.color = C_DANGER
@@ -188,7 +188,7 @@ class HomeScreen(Screen):
     def _nav(self, active):
         nav = BoxLayout(size_hint_y=None, height=dp(58), spacing=1)
         bg(nav, C_CARD)
-        for icon, lbl, scr in [("🏠","Home","home"),("📊","History","history"),("ℹ️","About","about")]:
+        for icon, lbl, scr in [("H","Home","home"),("S","Stats","history"),("i","About","about")]:
             b = Button(text=f"{icon}\n{lbl}", font_size=sp(10), halign="center",
                        background_color=C_PRIMARY if scr == active else C_CARD,
                        color=WHITE)
@@ -210,11 +210,11 @@ class ResultsScreen(Screen):
         # Header
         hdr = BoxLayout(size_hint_y=None, height=dp(58), padding=[dp(12), dp(8)])
         bg(hdr, C_CARD)
-        back = Button(text="← Back", size_hint_x=None, width=dp(80),
+        back = Button(text="< Back", size_hint_x=None, width=dp(80),
                       font_size=sp(13), background_color=C_CARD, color=C_ACCENT)
         back.bind(on_press=lambda _: setattr(self.manager, "current", "home"))
         hdr.add_widget(back)
-        hdr.add_widget(Label(text=f"Predictions · {date}",
+        hdr.add_widget(Label(text=f"Predictions  {date}",
                              font_size=sp(15), bold=True, color=C_TEXT))
         self._root.add_widget(hdr)
 
@@ -222,7 +222,7 @@ class ResultsScreen(Screen):
         acc = bundle.get("model_accuracy", "N/A")
         acc_str = f"{float(acc)*100:.1f}%" if isinstance(acc, float) else str(acc)
         info = Label(
-            text=f"Model accuracy: {acc_str}  ·  Built: {bundle.get('generated_at','?')}",
+            text=f"Model accuracy: {acc_str}  |  Built: {bundle.get('generated_at','?')}",
             font_size=sp(10), color=C_MUTED, size_hint_y=None, height=dp(22),
             halign="center")
         self._root.add_widget(info)
@@ -241,7 +241,7 @@ class ResultsScreen(Screen):
                 cards.add_widget(self._card(i, p))
 
         cards.add_widget(Label(
-            text="⚠️  Statistical predictions only. Gamble responsibly. 18+",
+            text="Statistical predictions only. Gamble responsibly. 18+",
             font_size=sp(10), color=C_MUTED, halign="center",
             size_hint_y=None, height=dp(36),
             text_size=(Window.width - dp(20), None)))
@@ -311,7 +311,7 @@ class HistoryScreen(Screen):
         bg(root, C_BG)
         hdr = BoxLayout(size_hint_y=None, height=dp(58), padding=[dp(16), dp(10)])
         bg(hdr, C_CARD)
-        hdr.add_widget(Label(text="📊  Recent Predictions",
+        hdr.add_widget(Label(text="Recent Predictions",
                              font_size=sp(17), bold=True, color=C_TEXT))
         root.add_widget(hdr)
 
@@ -331,13 +331,13 @@ class HistoryScreen(Screen):
                     day_card = BoxLayout(orientation="vertical", padding=dp(10),
                                         spacing=dp(4), size_hint_y=None, height=dp(80))
                     bg(day_card, C_CARD, radius=8)
-                    day_card.add_widget(Label(text=f"📅  {d}", font_size=sp(13),
+                    day_card.add_widget(Label(text=f"  {d}", font_size=sp(13),
                                              bold=True, color=C_TEXT, halign="left",
                                              size_hint_y=None, height=dp(22)))
                     ps = preds_dict[d][:2]
                     for p in ps:
                         day_card.add_widget(Label(
-                            text=f"  {p['home']} vs {p['away']}  →  {p['prediction']}  ({p['confidence']})",
+                            text=f"  {p['home']} vs {p['away']}  =>  {p['prediction']}  ({p['confidence']})",
                             font_size=sp(11), color=C_MUTED, halign="left",
                             text_size=(Window.width - dp(52), None),
                             size_hint_y=None, height=dp(18)))
@@ -356,7 +356,7 @@ class HistoryScreen(Screen):
     def _nav(self, active):
         nav = BoxLayout(size_hint_y=None, height=dp(58), spacing=1)
         bg(nav, C_CARD)
-        for icon, lbl, scr in [("🏠","Home","home"),("📊","History","history"),("ℹ️","About","about")]:
+        for icon, lbl, scr in [("H","Home","home"),("S","Stats","history"),("i","About","about")]:
             b = Button(text=f"{icon}\n{lbl}", font_size=sp(10), halign="center",
                        background_color=C_PRIMARY if scr == active else C_CARD,
                        color=WHITE)
@@ -372,7 +372,7 @@ class AboutScreen(Screen):
         bg(root, C_BG)
         hdr = BoxLayout(size_hint_y=None, height=dp(58), padding=[dp(16), dp(10)])
         bg(hdr, C_CARD)
-        hdr.add_widget(Label(text="ℹ️  About", font_size=sp(17),
+        hdr.add_widget(Label(text="About", font_size=sp(17),
                              bold=True, color=C_TEXT))
         root.add_widget(hdr)
 
@@ -385,14 +385,14 @@ class AboutScreen(Screen):
         ac = BoxLayout(orientation="vertical", padding=dp(14), spacing=dp(8),
                        size_hint_y=None, height=dp(120))
         bg(ac, C_CARD, radius=10)
-        ac.add_widget(Label(text="⚽  BetPawa Predictor", font_size=sp(19),
+        ac.add_widget(Label(text="BetPawa Predictor", font_size=sp(19),
                             bold=True, color=C_PRIMARY, halign="center",
                             size_hint_y=None, height=dp(28)))
-        ac.add_widget(Label(text="Version 1.0.0  ·  AI-Powered Football Predictions",
+        ac.add_widget(Label(text="Version 1.0.0  |  AI-Powered Football Predictions",
                             font_size=sp(11), color=C_MUTED, halign="center",
                             size_hint_y=None, height=dp(18)))
         ac.add_widget(Label(
-            text="XGBoost Machine Learning  ·  500+ match training set\nPredictions generated server-side, bundled fresh each build",
+            text="XGBoost Machine Learning  |  500+ match training set\nPredictions generated server-side, bundled fresh each build",
             font_size=sp(11), color=C_TEXT, halign="center",
             text_size=(Window.width - dp(52), None),
             size_hint_y=None, height=dp(36)))
@@ -402,7 +402,7 @@ class AboutScreen(Screen):
         dc = BoxLayout(orientation="vertical", padding=dp(14), spacing=dp(6),
                        size_hint_y=None, height=dp(170))
         bg(dc, C_CARD, radius=10)
-        dc.add_widget(Label(text="👨‍💻  DEVELOPER", font_size=sp(10),
+        dc.add_widget(Label(text="DEVELOPER", font_size=sp(10),
                             color=C_MUTED, bold=True, halign="left",
                             size_hint_y=None, height=dp(18)))
         for field, value in [
@@ -426,7 +426,7 @@ class AboutScreen(Screen):
         disc = BoxLayout(orientation="vertical", padding=dp(12), spacing=dp(4),
                          size_hint_y=None, height=dp(110))
         bg(disc, C_CARD, radius=10)
-        disc.add_widget(Label(text="⚠️  DISCLAIMER", font_size=sp(10),
+        disc.add_widget(Label(text="DISCLAIMER", font_size=sp(10),
                               color=C_DANGER, bold=True, halign="left",
                               size_hint_y=None, height=dp(18)))
         disc.add_widget(Label(
@@ -446,7 +446,7 @@ class AboutScreen(Screen):
     def _nav(self, active):
         nav = BoxLayout(size_hint_y=None, height=dp(58), spacing=1)
         bg(nav, C_CARD)
-        for icon, lbl, scr in [("🏠","Home","home"),("📊","History","history"),("ℹ️","About","about")]:
+        for icon, lbl, scr in [("H","Home","home"),("S","Stats","history"),("i","About","about")]:
             b = Button(text=f"{icon}\n{lbl}", font_size=sp(10), halign="center",
                        background_color=C_PRIMARY if scr == active else C_CARD,
                        color=WHITE)
