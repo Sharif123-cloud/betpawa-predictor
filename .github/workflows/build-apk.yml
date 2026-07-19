@@ -1,0 +1,108 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run data pipeline (scraper → clean → train)
+        run: |
+          python scraper.py
+          python clean.py
+          python train.py
+        env:
+          FOOTBALL_API_TOKEN: ${{ secrets.FOOTBALL_API_TOKEN }}
+
+      - name: Install buildozer system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            git zip unzip openjdk-17-jdk \
+            python3-pip autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev \
+            libtinfo5 cmake libffi-dev libssl-dev \
+            build-essential ccache
+
+      - name: Cache buildozer global directory
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-buildozer-
+
+      - name: Install buildozer
+        run: pip install buildozer cython==0.29.36
+
+      - name: Accept Android SDK licenses
+        run: |
+          mkdir -p $HOME/.android
+          touch $HOME/.android/repositories.cfg
+          yes | ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --licenses 2>/dev/null || true
+
+      - name: Build APK
+        run: buildozer android debug
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+
+      - name: Rename APK with version tag
+        run: |
+          APK=$(ls bin/*.apk | head -1)
+          NEW_NAME="bin/BetPawa-Predictor-v1.0.0.apk"
+          mv "$APK" "$NEW_NAME" 2>/dev/null || true
+          echo "APK_FILE=$NEW_NAME" >> $GITHUB_ENV
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BetPawa-Predictor-APK
+          path: bin/*.apk
+          retention-days: 30
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "BetPawa Predictor v1.0.${{ github.run_number }}"
+          body: |
+            ## ⚽ BetPawa Predictor APK
+
+            **What's new in this build:**
+            - XGBoost model trained on latest match data
+            - AI predictions for football match outcomes
+            - Dark theme UI with probability breakdown
+
+            **How to install:**
+            1. Download `BetPawa-Predictor-v1.0.0.apk` below
+            2. On your Android phone: Settings → Security → Enable "Unknown sources"
+            3. Open the downloaded .apk and tap Install
+
+            **Developer:** Sserunjogi Sharif | 0787816686
+          files: bin/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
