@@ -14,7 +14,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Pin to exact patch version so python3==3.9.25 in buildozer.spec matches
       - name: Set up Python 3.9.25
         uses: actions/setup-python@v5
         with:
@@ -25,16 +24,6 @@ jobs:
         with:
           java-version: "17"
           distribution: "temurin"
-
-      # Override /usr/bin/python3 so p4a's hostpython3 detection finds 3.9.25
-      # not the runner's system Python 3.14.x
-      - name: Force system python3 to point to 3.9.25
-        run: |
-          PY=$(which python3)
-          echo "Forcing /usr/bin/python3 -> $PY"
-          sudo ln -sf "$PY" /usr/bin/python3
-          sudo ln -sf "$PY" /usr/bin/python
-          python3 --version
 
       - name: Cache pip packages
         uses: actions/cache@v4
@@ -56,6 +45,8 @@ jobs:
         env:
           FOOTBALL_API_TOKEN: ${{ secrets.FOOTBALL_API_TOKEN }}
 
+      # apt-get must run BEFORE we override /usr/bin/python3
+      # because system apt tools (cnf-update-db) need the original python3
       - name: Install system build dependencies for buildozer
         run: |
           sudo apt-get update -qq
@@ -67,13 +58,24 @@ jobs:
             libncurses5-dev libncursesw5-dev libtinfo5 \
             cmake libffi-dev libssl-dev libltdl-dev
 
+      # Override /usr/bin/python3 AFTER apt-get so system tools aren't broken.
+      # p4a calls 'python3' internally to detect hostpython3 version.
+      # Without this, it finds the runner's system Python 3.14.x instead of our 3.9.25.
+      - name: Override system python3 to point to 3.9.25
+        run: |
+          PY=$(which python3)
+          echo "Symlinking /usr/bin/python3 -> $PY ($(python3 --version))"
+          sudo ln -sf "$PY" /usr/bin/python3
+          sudo ln -sf "$PY" /usr/bin/python
+          echo "Verification: $(python3 --version) | $(/usr/bin/python3 --version)"
+
       - name: Cache buildozer global directory
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: ${{ runner.os }}-buildozer-native-py3925-v1-${{ hashFiles('buildozer.spec') }}
+          key: ${{ runner.os }}-buildozer-native-py3925-v2-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            ${{ runner.os }}-buildozer-native-py3925-v1-
+            ${{ runner.os }}-buildozer-native-py3925-v2-
 
       - name: Install Cython 0.29.37 and buildozer 1.5.0
         run: |
