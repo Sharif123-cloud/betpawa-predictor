@@ -7,8 +7,9 @@ source.include_exts = py,png,jpg,kv,atlas,json
 source.include_patterns = predictions.json,model_meta.json
 version = 1.0.0
 
-# kivy 2.1.0 is the stable release with verified python-for-android recipes
-requirements = python3,kivy==2.1.0,pillow
+# Pin Python to 3.12.7: last version that has the 'cgi' module
+# (removed in 3.13+). Cython 0.29.x requires 'cgi' via its Tempita module.
+requirements = python3==3.12.7,kivy==2.1.0,pillow
 
 orientation = portrait
 fullscreen = 0
