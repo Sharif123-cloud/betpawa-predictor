@@ -47,11 +47,7 @@ jobs:
             python3-pip autoconf libtool pkg-config \
             zlib1g-dev libncurses-dev \
             cmake libffi-dev libssl-dev \
-            build-essential ccache \
-            libgstreamer1.0-dev gstreamer1.0-plugins-base \
-            libgstreamer-plugins-base1.0-dev \
-            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-            libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev
+            build-essential ccache
 
       - name: Cache Buildozer global directory
         uses: actions/cache@v4
@@ -59,21 +55,14 @@ jobs:
           path: |
             ~/.buildozer
             ~/.android
-          key: ${{ runner.os }}-buildozer-v5-${{ hashFiles('buildozer.spec') }}
+          key: ${{ runner.os }}-buildozer-v6-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            ${{ runner.os }}-buildozer-v5-
+            ${{ runner.os }}-buildozer-v6-
 
       - name: Install Buildozer and Cython
         run: |
           pip install "cython==0.29.33"
           pip install buildozer
-
-      - name: Accept Android SDK licenses
-        run: |
-          mkdir -p ~/.android
-          touch ~/.android/repositories.cfg
-          yes | sdkmanager --licenses 2>/dev/null || true
-        continue-on-error: true
 
       - name: Build APK
         run: buildozer -v android debug 2>&1
@@ -101,7 +90,7 @@ jobs:
           tag_name: v1.0.${{ github.run_number }}
           name: "BetPawa Predictor v1.0.${{ github.run_number }}"
           body: |
-            ## ⚽ BetPawa Predictor APK — ready to install
+            ## BetPawa Predictor APK — ready to install
 
             ### Install on Android
             1. Download **BetPawa-Predictor-v1.0.${{ github.run_number }}.apk** below
